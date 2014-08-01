@@ -22,15 +22,27 @@ public class Metadata {
 	
 	public Metadata(Metadata metadata) {
 		this.metadata = new BitSet(3);
-		this.metadata.and(metadata.getMetadata());
+		this.metadata.and(metadata.getMetadataSet());
 	}
 	
-	protected BitSet getMetadata() {
+	protected BitSet getMetadataSet() {
 		return this.metadata;
 	}
 	
 	public void setMetadata(BitSet metadata) {
 		this.metadata.and(metadata);
+	}
+	
+	public Boolean getOccupied() {
+		return metadata.get(OCCUPIED_BIT);
+	}
+	
+	public Boolean getShifted() {
+		return metadata.get(SHIFTED_BIT);
+	}
+	
+	public Boolean getContinuation() {
+		return metadata.get(CONTINUATION_BIT);
 	}
 	
 	public void setOccupied() {
@@ -55,5 +67,12 @@ public class Metadata {
 	
 	public void clearShifted() {
 		metadata.clear(SHIFTED_BIT);
+	}
+	
+	public Boolean isClear() {
+		//if (this.metadata.and(set))
+		if(this.metadata.isEmpty()) 
+			return true;
+		return false;
 	}
 }

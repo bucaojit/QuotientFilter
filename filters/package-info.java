@@ -1,5 +1,8 @@
 /**
- * @author Oliver
+ * 
+ */
+/**
+ * @author latitude
  *
  */
 package filters;
