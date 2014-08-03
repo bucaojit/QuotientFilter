@@ -1,4 +1,5 @@
 package filters.tests;
+// Author: Oliver
 
 import filters.Metadata;
 import filters.QuotientFilter;
