@@ -11,8 +11,8 @@ import java.util.ArrayList;
 
 public class QuotientFilter {
 	private final int DEFAULT_SIZE = 1000;
-	private ArrayList<Slot> set;
-	private int size;
+	protected ArrayList<Slot> set;
+	protected int size;
 	
 	public QuotientFilter() {
 		// All bits set to null
@@ -27,6 +27,11 @@ public class QuotientFilter {
 		for(int i = 0; i < size; i++) 
 			this.set.add(new Slot());
 		this.size = this.set.size();
+	}
+	
+	// For Testing use only
+	public void setSlot(int index, Slot slot) {
+		this.set.set(index, slot);
 	}
 	
 	protected ArrayList<Slot> getSet() {
@@ -63,8 +68,12 @@ public class QuotientFilter {
 	}
 	
 	public Boolean lookup(Object obj) {
+		return lookup(getIndex(obj), QuotientFilter.getRemainder(obj));		
+	}
+	
+	public Boolean lookup(int index, short remainder) {
 		int isOccupiedCount = 0, isContinuationCount = 0;	
-		int currentIndex = getIndex(obj);
+		int currentIndex = index;
 		Slot currentSlot = set.get(currentIndex);
 
 		// Check if metadata bits are all clear for object's slot
@@ -87,16 +96,16 @@ public class QuotientFilter {
 			currentSlot = set.get(currentIndex);
 			if (!currentSlot.getMetadata().getContinuation()) 
 				isContinuationCount++;
-			currentIndex--;
+			currentIndex++;
 		}
 		
-		currentIndex++;		
+		currentIndex--;		
 		// currentIndex should now be at the start of the run
 		
 		// Now we check
 		currentSlot = set.get(currentIndex);
 		do {
-			if (currentSlot.getRemainder() == QuotientFilter.getRemainder(obj))
+			if (currentSlot.getRemainder() == remainder)
 				return true;
 			currentIndex++;
 			currentSlot = set.get(currentIndex);
