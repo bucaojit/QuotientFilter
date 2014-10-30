@@ -7,12 +7,13 @@ package filters;
 // Approximate Membership Query (AMQ)
 
 // import org.apache.hadoop.hbase.util for long to Bytes
+import java.io.IOException;
 import java.util.ArrayList;
 
 
 /*	Completed lookup. 
  * 
- *  TODO: Lookup optimization
+ *  DONE: Lookup optimization
  *   - if lookup == true, then return index
  *   - if lookup == false, return index to insert
  
@@ -34,7 +35,10 @@ import java.util.ArrayList;
 
 public class QuotientFilter {
 	private final int DEFAULT_SIZE = 1000;
+    // This size is the total capacity of the qf
+    private int qfSize;
 	protected ArrayList<Slot> set;
+    // This size should be the number of values inserted into the quotient filter
 	protected int size;
 	
 	public QuotientFilter() {
@@ -49,8 +53,13 @@ public class QuotientFilter {
 		this.set = new ArrayList<Slot>(size);
 		for(int i = 0; i < size; i++) 
 			this.set.add(new Slot());
-		this.size = this.set.size();
+        this.qfSize = this.set.size();
+		// this.size = this.set.size();
 	}
+
+    public int getSize() {
+        return this.qfSize;
+    }
 	
 	// For Testing use only
 	public void setSlot(int index, Slot slot) {
@@ -59,10 +68,6 @@ public class QuotientFilter {
 	
 	protected ArrayList<Slot> getSet() {
 		return set;
-	}
-	
-	public int getSize() {
-		return size;
 	}
 	
 	protected static short getQuotient(Object obj) {
@@ -84,6 +89,7 @@ public class QuotientFilter {
 	public void insert(Object obj) throws Exception{		
 		int index = getIndex(obj);
 		Slot currentSlot = set.get(index);
+        short remainder = QuotientFilter.getRemainder(obj);
 		if(!currentSlot.getMetadata().getOccupied()) {
 			// Slot is currently empty, free to set		
 			currentSlot.setRemainder(QuotientFilter.getRemainder(obj));		 
@@ -92,24 +98,35 @@ public class QuotientFilter {
 		}
 		else {
 			// The slot is occupied, see if we find the value. 
-			Integer foundIndex = new Integer(-1);
-			if(lookup(index, QuotientFilter.getRemainder(obj), foundIndex)) {
+			int foundIndex;
+            foundIndex = lookup(index, remainder);
+			if(foundIndex != -1) {
 				// lookup returned TRUE 
 				throw new Exception("Unable to insert, object already exists");
 			}
 			else {
-				// lookup returned FALSE
+				// lookup returned index value of where to insert
 				// foundIndex holds the index to insert the value
+                insertAndShift(remainder, foundIndex);
 			}
-			
 		}
 	}
+
+    public void insertAndShift(short remainder, int index) throws IOException {
+        // While there is a value in the index, if the next index is occupied,
+        // save the next index and put the value there.  If not occupied then move the current index there
+        // and done.  Check that we didn't loop around to the current index again, if so throw exception
+    }
+
+    public void deleteAndShift(int index) {
+
+    }
 	
 	public void delete(Object obj) throws Exception {
 		int index = getIndex(obj);
-		Integer foundIndex = new Integer(-1);
-		
-		if(lookup(index, QuotientFilter.getRemainder(obj), foundIndex)) {			
+		int foundIndex;
+		foundIndex = lookup(index, QuotientFilter.getRemainder(obj));
+		if(foundIndex != -1) {
 			// Found the value
 			// shift left the moved slots if they exist, otherwise set index to null
 			
@@ -118,19 +135,21 @@ public class QuotientFilter {
 			set.set(foundIndex, newSlot);
 		}
 	}
-	
-	public Boolean lookup(Object obj) {
-		return lookup(getIndex(obj), QuotientFilter.getRemainder(obj), null);		
+
+    // TODO: revisit foundIndex, changed from returning a boolean to an int
+	public int lookup(Object obj) {
+		return lookup(getIndex(obj), QuotientFilter.getRemainder(obj));
 	}
 	
-	public Boolean lookup(int index, short remainder, Integer foundIndex) {
+	public int lookup(int index, short remainder) {
 		int isOccupiedCount = 0, isContinuationCount = 0;	
 		int currentIndex = index;
 		Slot currentSlot = set.get(currentIndex);
+        int foundIndex = -1;
 
 		// Check if metadata bits are all clear for object's slot
 		if(currentSlot.getMetadata().isClear())
-			return false;
+			return -1;
 		
 		// Scan left until we reach beginning of the cluster, 
 		// or reach beginning of array.  
@@ -158,21 +177,21 @@ public class QuotientFilter {
 		currentSlot = set.get(currentIndex);
 		do {
 			if (currentSlot.getRemainder() == remainder) {
-				if (foundIndex != null)
+				if (foundIndex != -1)
 					foundIndex = currentIndex;
-				return true;
+				return foundIndex;
 			}
 			else if(currentSlot.getRemainder() > remainder) {
-				if (foundIndex != null)
+				if (foundIndex != -1l)
 					foundIndex = currentIndex;
-				return false;
+				return -1;
 			}
 			currentIndex++;
 			currentSlot = set.get(currentIndex);
 		} while(currentSlot.getMetadata().getContinuation() && currentIndex < this.size);
 		
 		// Did not find the remainder in the run, false
-		return false;
+		return -1;
 		/*
 		do {			
 			currentSlot = set.get(currentIndex);		

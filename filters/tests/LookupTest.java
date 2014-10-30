@@ -47,7 +47,7 @@ public class LookupTest {
 		qf.setSlot(5, slot5);
 		qf.setSlot(7, slot7);
 		
-		boolean found = qf.lookup(4, (short)5, null);
+		int found = qf.lookup(4, (short)5);
 		
 		System.out.println("The value for found is: " + found);
 	}
