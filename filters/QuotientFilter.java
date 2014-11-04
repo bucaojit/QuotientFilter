@@ -116,6 +116,15 @@ public class QuotientFilter {
         // While there is a value in the index, if the next index is occupied,
         // save the next index and put the value there.  If not occupied then move the current index there
         // and done.  Check that we didn't loop around to the current index again, if so throw exception
+        int currentIndex=0;
+        do {
+
+            currentIndex++;
+            if (currentIndex > this.qfSize)
+                currentIndex = 1;
+            if (currentIndex == index)
+                throw new IOException("Ran out of free index locations");
+        }while(true);
     }
 
     public void deleteAndShift(int index) {
