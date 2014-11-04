@@ -113,22 +113,31 @@ public class QuotientFilter {
 	}
 
     public void insertAndShift(short remainder, int index) throws IOException {
-        // While there is a value in the index, if the next index is occupied,
-        // save the next index and put the value there.  If not occupied then move the current index there
-        // and done.  Check that we didn't loop around to the current index again, if so throw exception
-        int currentIndex=0;
+        int currentIndex=index;
+        boolean hasMore = false;
         do {
-
+            // While there is a value in the index, if the next index is occupied,
+            // save the next index and put the value there.  If not occupied then move the current index there
+            // and done.
             currentIndex++;
             if (currentIndex > this.qfSize)
                 currentIndex = 1;
             if (currentIndex == index)
-                throw new IOException("Ran out of free index locations");
-        }while(true);
+                throw new IOException("Ran out of open index locations");
+        }while(hasMore);
     }
 
-    public void deleteAndShift(int index) {
-
+    public void deleteAndShift(int index) throws IOException {
+        int currentIndex=index;
+        boolean hasMore = false;
+        do {
+            // similar to insertAndShift, shift until there is an unoccupied slot
+            currentIndex++;
+            if (currentIndex > this.qfSize)
+                currentIndex = 1;
+            if (currentIndex == index)
+                throw new IOException("Ran out of open index locations");
+        }while(hasMore);
     }
 	
 	public void delete(Object obj) throws Exception {
