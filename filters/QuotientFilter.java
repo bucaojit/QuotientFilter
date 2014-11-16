@@ -1,3 +1,21 @@
+/**
+ *
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package filters;
 // Author: Oliver
 
@@ -16,8 +34,10 @@ import java.util.ArrayList;
  *  DONE: Lookup optimization
  *   - if lookup == true, then return index
  *   - if lookup == false, return index to insert
- 
- 	TODO: Insertion
+
+    TODO: lookup() changed now to returning index
+
+ 	Review: Insertion
  	- Review MAY-CONTAIN algorithm from white paper
  	- Similar to lookup, lookup will find where the slot should go
 	- Once known that the key is NOT in the filter, we insert the remainder in the current run that keeps things in sorted order. 
@@ -94,7 +114,9 @@ public class QuotientFilter {
 			// Slot is currently empty, free to set		
 			currentSlot.setRemainder(QuotientFilter.getRemainder(obj));		 
 			// TODO: depends on the current Slot's metadata
-			currentSlot.setMetadata(new Metadata());
+            Metadata md = new Metadata();
+            md.setOccupied();
+			currentSlot.setMetadata(md);
 		}
 		else {
 			// The slot is occupied, see if we find the value. 
@@ -113,8 +135,18 @@ public class QuotientFilter {
 	}
 
     public void insertAndShift(short remainder, int index) throws IOException {
+
+
+        // Keeping it simple for now to complete implementation
+        Metadata md = new Metadata();
+        md.setOccupied();
+        Slot newSlot = new Slot(remainder, md);
+        set.add(index, newSlot);
+
+        /*
         int currentIndex=index;
         boolean hasMore = false;
+
         do {
             // While there is a value in the index, if the next index is occupied,
             // save the next index and put the value there.  If not occupied then move the current index there
@@ -125,9 +157,15 @@ public class QuotientFilter {
             if (currentIndex == index)
                 throw new IOException("Ran out of open index locations");
         }while(hasMore);
+        */
     }
 
     public void deleteAndShift(int index) throws IOException {
+
+        // Keeping it simple for now to complete implementation
+        set.remove(index);
+
+        /*
         int currentIndex=index;
         boolean hasMore = false;
         do {
@@ -138,6 +176,8 @@ public class QuotientFilter {
             if (currentIndex == index)
                 throw new IOException("Ran out of open index locations");
         }while(hasMore);
+        */
+
     }
 	
 	public void delete(Object obj) throws Exception {
