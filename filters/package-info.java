@@ -1,8 +1,0 @@
-/**
- * 
- */
-/**
- * @author latitude
- *
- */
-package filters;
