@@ -25,14 +25,18 @@ package org.bucaojit.filter;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 
 public class QuotientFilter {
+    private static final Log LOG = LogFactory.getLog(QuotientFilter.class);
 	private final int DEFAULT_SIZE = 1000;
     private int qfSize;
 	protected ArrayList<Slot> set;
 	protected int size;
 	
 	public QuotientFilter() {
+	    LOG.info("Created QuotientFilter");
 		this.set = new ArrayList<Slot>(DEFAULT_SIZE);
 		for(int i = 0; i < DEFAULT_SIZE; i++) 
 			this.set.add(new Slot());
