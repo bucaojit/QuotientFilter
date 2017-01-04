@@ -4,7 +4,7 @@ QuotientFilter
 ###Java implementation of the approximate membership query set (AMQ)
 
 ####Build
-cd $QuotientFilter-Dir
+cd $QuotientFilter_Dir
 
 `mvn clean package -DskipTests`
 

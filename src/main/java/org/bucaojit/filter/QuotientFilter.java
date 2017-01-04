@@ -23,45 +23,16 @@ package org.bucaojit.filter;
 // General purpose quotient filter, takes in java Objects as an entry 
 // Approximate Membership Query (AMQ)
 
-// import org.apache.hadoop.hbase.util for long to Bytes
 import java.io.IOException;
 import java.util.ArrayList;
 
-
-/*	Completed lookup. 
- * 
- *  DONE: Lookup optimization
- *   - if lookup == true, then return index
- *   - if lookup == false, return index to insert
-
-    TODO: lookup() changed now to returning index
-
- 	Review: Insertion
- 	- Review MAY-CONTAIN algorithm from white paper
- 	- Similar to lookup, lookup will find where the slot should go
-	- Once known that the key is NOT in the filter, we insert the remainder in the current run that keeps things in sorted order. 
-	- Shift forward the remainders in slots in the cluster or after the chosen slots, update the metadata.
-	From wiki:
- *  Shifting a slot's remainder does not affect the slot's is_occupied bit because it pertains to the slot, not the remainder contained in the slot.
- *  If we insert a remainder at the start of an existing run, the previous remainder is shifted and becomes a continuation slot, so we set its is_continuation bit.
- *  We set the is_shifted bit of any remainder that we shift.
- 	
- 	For Insertion, if the array gets filled at the end, we wrap around to the beginning
- 	
- 	DELETION is similar to insertion, but subsequent slots are shifted back
-*/
- 
-
 public class QuotientFilter {
 	private final int DEFAULT_SIZE = 1000;
-    // This size is the total capacity of the qf
     private int qfSize;
 	protected ArrayList<Slot> set;
-    // This size should be the number of values inserted into the quotient filter
 	protected int size;
 	
 	public QuotientFilter() {
-		// All bits set to null
 		this.set = new ArrayList<Slot>(DEFAULT_SIZE);
 		for(int i = 0; i < DEFAULT_SIZE; i++) 
 			this.set.add(new Slot());
@@ -73,14 +44,12 @@ public class QuotientFilter {
 		for(int i = 0; i < size; i++) 
 			this.set.add(new Slot());
         this.qfSize = this.set.size();
-		// this.size = this.set.size();
 	}
 
     public int getSize() {
         return this.qfSize;
     }
 	
-	// For Testing use only
 	public void setSlot(int index, Slot slot) {
 		this.set.set(index, slot);
 	}
@@ -91,7 +60,6 @@ public class QuotientFilter {
 	
 	protected static short getQuotient(Object obj) {
 		Integer hashcode = obj.hashCode();
-		// Want only the first 16-bits
 		hashcode = hashcode >> 16;
 		return hashcode.shortValue();
 	}
@@ -109,34 +77,26 @@ public class QuotientFilter {
 		int index = getIndex(obj);
 		Slot currentSlot = set.get(index);
         short remainder = QuotientFilter.getRemainder(obj);
-		if(!currentSlot.getMetadata().getOccupied()) {
-			// Slot is currently empty, free to set		
+		if(!currentSlot.getMetadata().getOccupied()) {		
 			currentSlot.setRemainder(QuotientFilter.getRemainder(obj));		 
 			// TODO: depends on the current Slot's metadata
             Metadata md = new Metadata();
             md.setOccupied();
 			currentSlot.setMetadata(md);
 		}
-		else {
-			// The slot is occupied, see if we find the value. 
+		else { 
 			int foundIndex;
             foundIndex = lookup(index, remainder);
-			if(foundIndex != -1) {
-				// lookup returned TRUE 
+			if(foundIndex != -1) { 
 				throw new Exception("Unable to insert, object already exists");
 			}
 			else {
-				// lookup returned index value of where to insert
-				// foundIndex holds the index to insert the value
                 insertAndShift(remainder, foundIndex);
 			}
 		}
 	}
 
     public void insertAndShift(short remainder, int index) throws IOException {
-
-
-        // Keeping it simple for now to complete implementation
         Metadata md = new Metadata();
         md.setOccupied();
         Slot newSlot = new Slot(remainder, md);
@@ -160,8 +120,6 @@ public class QuotientFilter {
     }
 
     public void deleteAndShift(int index) throws IOException {
-
-        // Keeping it simple for now to complete implementation
         set.remove(index);
 
         /*
@@ -203,8 +161,7 @@ public class QuotientFilter {
 		int currentIndex = index;
 		Slot currentSlot = set.get(currentIndex);
         int foundIndex = -1;
-
-		// Check if metadata bits are all clear for object's slot
+        
 		if(currentSlot.getMetadata().isClear())
 			return -1;
 		

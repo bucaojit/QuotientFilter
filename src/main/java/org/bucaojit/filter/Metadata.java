@@ -22,6 +22,22 @@ package org.bucaojit.filter;
 
 import java.util.BitSet;
 
+/*
+is_occupied
+  is_continuation
+    is_shifted
+0 0 0 : Empty Slot
+0 0 1 : Slot is holding start of run that has been shifted from its canonical slot.
+0 1 0 : not used.
+0 1 1 : Slot is holding continuation of run that has been shifted from its canonical slot.
+1 0 0 : Slot is holding start of run that is in its canonical slot.
+1 0 1 : Slot is holding start of run that has been shifted from its canonical slot.
+        Also the run for which this is the canonical slot exists but is shifted right.
+1 1 0 : not used.
+1 1 1 : Slot is holding continuation of run that has been shifted from its canonical slot.
+        Also the run for which this is the canonical slot exists but is shifted right.
+ */
+
 public class Metadata {
 	private final int OCCUPIED_BIT = 0;
 	private final int CONTINUATION_BIT = 1;
