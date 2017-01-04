@@ -25,6 +25,8 @@ package org.bucaojit.filter;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.BitSet;
+
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.log4j.BasicConfigurator;
@@ -85,7 +87,7 @@ public class QuotientFilter {
 		if(!currentSlot.getMetadata().getOccupied()) {		
 			currentSlot.setRemainder(QuotientFilter.getRemainder(obj));		 
 			// TODO: depends on the current Slot's metadata
-            Metadata md = new Metadata();
+            Metadata<BitSet> md = new MetadataBitSet<BitSet>();
             md.setOccupied();
 			currentSlot.setMetadata(md);
 		}
@@ -102,7 +104,7 @@ public class QuotientFilter {
 	}
 
     public void insertAndShift(short remainder, int index) throws IOException {
-        Metadata md = new Metadata();
+        Metadata<BitSet> md = new MetadataBitSet<BitSet>();
         md.setOccupied();
         Slot newSlot = new Slot(remainder, md);
         set.add(index, newSlot);
