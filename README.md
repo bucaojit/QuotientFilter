@@ -5,6 +5,7 @@ QuotientFilter
 
 ####Build
 cd $QuotientFilter-Dir
+
 `mvn clean package -DskipTests`
 
 
