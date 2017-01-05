@@ -13,11 +13,11 @@ public class TestDriver {
 		QuotientFilter qf = new QuotientFilter(10);
 		// Setting up quotient filter to look like State 2 in
 		// http://en.wikipedia.org/wiki/Quotient_filter
-		Metadata index1 = new Metadata();
-		Metadata index2 = new Metadata();
-		Metadata index3 = new Metadata();
-		Metadata index4 = new Metadata();
-		Metadata index7 = new Metadata();
+		Metadata index1 = new MetadataBitSet();
+		Metadata index2 = new MetadataBitSet();
+		Metadata index3 = new MetadataBitSet();
+		Metadata index4 = new MetadataBitSet();
+		Metadata index7 = new MetadataBitSet();
 		
 		index1.setOccupied();
 		

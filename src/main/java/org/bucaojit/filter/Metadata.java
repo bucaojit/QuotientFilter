@@ -38,12 +38,12 @@ is_occupied
         Also the run for which this is the canonical slot exists but is shifted right.
  */
 
-public interface Metadata<T> {
-	
+public interface Metadata {
+	/*
 	public T getMetadataSet();
 	
 	public void setMetadata(T metadata);
-	
+	*/
 	public Boolean getOccupied();
 	
 	public Boolean getShifted();

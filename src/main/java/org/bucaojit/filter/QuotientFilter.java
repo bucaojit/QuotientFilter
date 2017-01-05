@@ -87,7 +87,7 @@ public class QuotientFilter {
 		if(!currentSlot.getMetadata().getOccupied()) {		
 			currentSlot.setRemainder(QuotientFilter.getRemainder(obj));		 
 			// TODO: depends on the current Slot's metadata
-            Metadata<BitSet> md = new MetadataBitSet<BitSet>();
+            Metadata md = new MetadataBitSet();
             md.setOccupied();
 			currentSlot.setMetadata(md);
 		}
@@ -104,7 +104,7 @@ public class QuotientFilter {
 	}
 
     public void insertAndShift(short remainder, int index) throws IOException {
-        Metadata<BitSet> md = new MetadataBitSet<BitSet>();
+        Metadata md = new MetadataBitSet();
         md.setOccupied();
         Slot newSlot = new Slot(remainder, md);
         set.add(index, newSlot);
