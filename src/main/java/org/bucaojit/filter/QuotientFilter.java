@@ -38,7 +38,7 @@ public class QuotientFilter {
 	protected int size;
 	
 	public QuotientFilter() {
-	    LOG.info("Created QuotientFilter");
+	    LOG.info("Created QuotientFilter of size: " + DEFAULT_SIZE);
 		this.set = new ArrayList<Slot>(DEFAULT_SIZE);
 		for(int i = 0; i < DEFAULT_SIZE; i++) 
 			this.set.add(new Slot());
@@ -46,6 +46,7 @@ public class QuotientFilter {
 	}
 	
 	public QuotientFilter(int size) {
+	    LOG.info("Created QuotientFilter of size: " + size);
 		this.set = new ArrayList<Slot>(size);
 		for(int i = 0; i < size; i++) 
 			this.set.add(new Slot());
@@ -64,28 +65,15 @@ public class QuotientFilter {
 		return set;
 	}
 	
-	protected static short getQuotient(Object obj) {
-		Integer hashcode = obj.hashCode();
-		hashcode = hashcode >> 16;
-		return hashcode.shortValue();
-	}
-	
-	protected static short getRemainder(Object obj) {
-		Integer hashcode = obj.hashCode();
-		return hashcode.shortValue();
-	}
-	
-	private int getIndex(Object obj) {
-		return QuotientFilter.getQuotient(obj)/size;
-	}
+
 	
 	public void insert(Object obj) throws Exception{		
-		int index = getIndex(obj);
+		int index = Utils.getIndex(obj, getSize());
 		Slot currentSlot = set.get(index);
-        short remainder = QuotientFilter.getRemainder(obj);
+        short remainder = Utils.getRemainder(obj);
 		if(!currentSlot.getMetadata().getOccupied()) {		
-			currentSlot.setRemainder(QuotientFilter.getRemainder(obj));		 
-			// TODO: depends on the current Slot's metadata
+			currentSlot.setRemainder(Utils.getRemainder(obj));		 
+
             Metadata md = new MetadataBitSet();
             md.setOccupied();
 			currentSlot.setMetadata(md);
@@ -144,9 +132,9 @@ public class QuotientFilter {
     }
 	
 	public void delete(Object obj) throws Exception {
-		int index = getIndex(obj);
+		int index = Utils.getIndex(obj, getSize());
 		int foundIndex;
-		foundIndex = lookup(index, QuotientFilter.getRemainder(obj));
+		foundIndex = lookup(index, Utils.getRemainder(obj));
 		if(foundIndex != -1) {
 			// Found the value
 			// shift left the moved slots if they exist, otherwise set index to null
@@ -157,66 +145,72 @@ public class QuotientFilter {
 		}
 	}
 
-    // TODO: revisit foundIndex, changed from returning a boolean to an int
 	public int lookup(Object obj) {
-		return lookup(getIndex(obj), QuotientFilter.getRemainder(obj));
+		return lookup(Utils.getIndex(obj, getSize()), Utils.getRemainder(obj));
 	}
 	
-	public int lookup(int index, short remainder) {
-		int isOccupiedCount = 0, isContinuationCount = 0;	
+	public int lookup(int index, short remainder) {	
 		int currentIndex = index;
 		Slot currentSlot = set.get(currentIndex);
         int foundIndex = -1;
+        int runStart = 0;
         
 		if(currentSlot.getMetadata().isClear())
 			return -1;
 		
-		// Scan left until we reach beginning of the cluster, 
-		// or reach beginning of array.  
-		// This is when the SHIFTED_BIT is false		
-		while (currentIndex > 0) {
-			currentSlot = set.get(currentIndex);
-			if(currentSlot.getMetadata().getOccupied()) 
-				isOccupiedCount++;
-			if(!currentSlot.getMetadata().getShifted()) 
-				break;
-			currentIndex--;
-		}		
-		// currentIndex is now the start of the cluster
-		while(isOccupiedCount > isContinuationCount) {
-			currentSlot = set.get(currentIndex);
-			if (!currentSlot.getMetadata().getContinuation()) 
-				isContinuationCount++;
-			currentIndex++;
-		}
+		runStart = findRunStart(currentIndex);
 		
-		currentIndex--;		
-		// currentIndex should now be at the start of the run
+		return checkQuotient(runStart, remainder);	
+	}
+	
+	private int checkQuotient(int runStart, short remainder) {
+		int foundIndex = -1;
+		int currentIndex = runStart;
+		Slot slot = set.get(runStart);
 		
-		// Now we check
-		currentSlot = set.get(currentIndex);
 		do {
-			if (currentSlot.getRemainder() == remainder) {
-				if (foundIndex != -1)
-					foundIndex = currentIndex;
-				return foundIndex;
+			if (slot.getRemainder() == remainder) {
+				return currentIndex;
 			}
-			else if(currentSlot.getRemainder() > remainder) {
-				if (foundIndex != -1l)
-					foundIndex = currentIndex;
+			else if(slot.getRemainder() > remainder) {
 				return -1;
 			}
 			currentIndex++;
-			currentSlot = set.get(currentIndex);
-		} while(currentSlot.getMetadata().getContinuation() && currentIndex < this.size);
+			slot = set.get(currentIndex);
+		} while(slot.getMetadata().getContinuation() && currentIndex < getSize());
 		
 		// Did not find the remainder in the run, false
 		return -1;
-		/*
-		do {			
-			currentSlot = set.get(currentIndex);		
-		} while (currentIndex > 0 && currentSlot.getMetadata().getOccupied());
-		*/		
+	}
+	
+	private int findRunStart(int currentIndex) {
+		int isOccupiedCount = 0;
+		int isContinuationCount = 0;
+		Slot slot = new Slot(); 
+		
+		while (true) {
+			slot = set.get(currentIndex);
+			if(slot.getMetadata().getOccupied()) 
+				isOccupiedCount++;
+			if(!slot.getMetadata().getShifted()) 
+				break;
+			currentIndex--;
+			if(currentIndex < 0) 
+				currentIndex = getSize() - 1;
+		}
+		
+		// currentIndex is now the start of the CLUSTER
+		while(true) {
+			slot = set.get(currentIndex);
+			if (!slot.getMetadata().getContinuation()) 
+				isContinuationCount++;
+			if(isOccupiedCount <= isContinuationCount) {
+				return currentIndex;
+			}
+			currentIndex++;
+			if(currentIndex > (getSize() - 1))
+				currentIndex = 0;
+		}
 	}
 	
 	public static void main(String[] args) {
@@ -226,8 +220,8 @@ public class QuotientFilter {
 		System.out.println(qf.hashCode());
 		
 		System.out.println(Integer.toBinaryString(qf.hashCode()));
-		System.out.println(Integer.toBinaryString(0xFFFF & QuotientFilter.getQuotient(qf)));
-		System.out.println(Integer.toBinaryString(0xFFFF & QuotientFilter.getRemainder(qf)));	
+		System.out.println(Integer.toBinaryString(0xFFFF & Utils.getQuotient(qf)));
+		System.out.println(Integer.toBinaryString(0xFFFF & Utils.getRemainder(qf)));	
 		
 	}	
 }

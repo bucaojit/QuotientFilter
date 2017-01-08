@@ -63,6 +63,11 @@ public class LookupTest extends TestCase {
 		int found = qf.lookup(4, (short)5);
 		
 		System.out.println("The value found is: " + found);
-		Assert.assertEquals(-1, found);
+		Assert.assertEquals(5, found);
+	}
+	
+	public static void main(String[] str) {
+		LookupTest test = new LookupTest("Lookup Test");
+		test.testApp();
 	}
 }
