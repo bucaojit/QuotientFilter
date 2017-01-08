@@ -1,12 +1,24 @@
 //package filters.tests;
 package org.bucaojit.filter;
-// Author: Oliver
-import org.bucaojit.filter.Metadata;
-import org.bucaojit.filter.QuotientFilter;
-import org.bucaojit.filter.Slot;
 
-public class LookupTest {
-	public static void main(String[] args) {
+import junit.framework.TestCase;
+import junit.framework.TestSuite;
+import junit.framework.Assert;
+import junit.framework.Test;
+
+public class LookupTest extends TestCase {
+	
+	public LookupTest( String testName )
+    {
+        super( testName );
+    }
+	
+    public static Test suite()
+    {
+        return new TestSuite( LookupTest.class );
+    }
+    
+	public void testApp() {
 		QuotientFilter qf = new QuotientFilter(10);
 		// Setting up quotient filter to look like State 3 in
 		// http://en.wikipedia.org/wiki/Quotient_filter
@@ -50,6 +62,7 @@ public class LookupTest {
 		
 		int found = qf.lookup(4, (short)5);
 		
-		System.out.println("The value for found is: " + found);
+		System.out.println("The value found is: " + found);
+		Assert.assertEquals(-1, found);
 	}
 }

@@ -25,7 +25,6 @@ package org.bucaojit.filter;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.BitSet;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;

@@ -1,15 +1,27 @@
 //package filters.tests;
 package org.bucaojit.filter;
+
+import junit.framework.Assert;
+import junit.framework.Test;
+import junit.framework.TestCase;
+import junit.framework.TestSuite;
+
 // Author: Oliver
 
-import org.bucaojit.filter.Metadata;
-import org.bucaojit.filter.QuotientFilter;
-import org.bucaojit.filter.Slot;
-
 // Test for insert QuotientFilter
-public class TestDriver {
+public class TestDriver extends TestCase{
 	
-	public static void main(String[] args) {
+	public TestDriver( String testName )
+    {
+        super( testName );
+    }
+	
+    public static Test suite()
+    {
+        return new TestSuite( TestDriver.class );
+    }
+	
+	public  void testApp() {
 		QuotientFilter qf = new QuotientFilter(10);
 		// Setting up quotient filter to look like State 2 in
 		// http://en.wikipedia.org/wiki/Quotient_filter
@@ -43,5 +55,9 @@ public class TestDriver {
 		qf.setSlot(3, slot3);
 		qf.setSlot(4, slot4);
 		qf.setSlot(7, slot7);
+		//int found = qf.lookup(4, (short)5);
+		//System.out.println("The value found is: " + found);
+		System.out.println(qf.hashCode());
+		Assert.assertEquals(1288354730, qf.hashCode());
 	}
 }

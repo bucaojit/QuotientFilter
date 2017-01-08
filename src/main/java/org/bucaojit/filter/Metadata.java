@@ -18,10 +18,6 @@
  */
 package org.bucaojit.filter;
 
-// Author: Oliver
-
-import java.util.BitSet;
-
 /*
 is_occupied
   is_continuation
