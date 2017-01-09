@@ -35,14 +35,15 @@ public class QuotientFilter {
 	private final int DEFAULT_SIZE = 1000;
     private int qfSize;
 	protected ArrayList<Slot> set;
-	protected int size;
+	protected int capacity;
 	
 	public QuotientFilter() {
 	    LOG.info("Created QuotientFilter of size: " + DEFAULT_SIZE);
 		this.set = new ArrayList<Slot>(DEFAULT_SIZE);
 		for(int i = 0; i < DEFAULT_SIZE; i++) 
 			this.set.add(new Slot());
-		this.size = this.set.size();
+		this.capacity = DEFAULT_SIZE;
+		this.qfSize = 0;
 	}
 	
 	public QuotientFilter(int size) {
@@ -50,11 +51,20 @@ public class QuotientFilter {
 		this.set = new ArrayList<Slot>(size);
 		for(int i = 0; i < size; i++) 
 			this.set.add(new Slot());
-        this.qfSize = this.set.size();
+		this.capacity = size;
+        this.qfSize = 0;
+	}
+	
+	public int getCapacity() {
+		return this.capacity;
 	}
 
     public int getSize() {
         return this.qfSize;
+    }
+    
+    public boolean isFull() {
+    	return getSize() >= getCapacity();
     }
 	
 	public void setSlot(int index, Slot slot) {
@@ -65,55 +75,83 @@ public class QuotientFilter {
 		return set;
 	}
 	
-
-	
-	public void insert(Object obj) throws Exception{		
-		int index = Utils.getIndex(obj, getSize());
+	public void insert(Object obj) throws Exception{	
+		
+		if(isFull()) {
+			throw new IOException("ERROR: Quotient Filter has reached capacity");
+		}
+		int index = Utils.getIndex(obj, getCapacity());
 		Slot currentSlot = set.get(index);
         short remainder = Utils.getRemainder(obj);
+        
 		if(!currentSlot.getMetadata().getOccupied()) {		
 			currentSlot.setRemainder(Utils.getRemainder(obj));		 
 
             Metadata md = new MetadataBitSet();
             md.setOccupied();
 			currentSlot.setMetadata(md);
+			currentSlot.setRemainder(remainder);
 		}
 		else { 
 			int foundIndex;
             foundIndex = lookup(index, remainder);
 			if(foundIndex != -1) { 
-				throw new Exception("Unable to insert, object already exists");
+				throw new IOException("Object already exists");
 			}
 			else {
-                insertAndShift(remainder, foundIndex);
+                insertShift(remainder, foundIndex);
 			}
 		}
 	}
 
-    public void insertAndShift(short remainder, int index) throws IOException {
-        Metadata md = new MetadataBitSet();
+    public void insertShift(short remainder, int index) throws IOException {
+        Integer runStart = 0;
+        Integer position = index;
+        boolean atStart = true;
+    	Metadata md = new MetadataBitSet();
         md.setOccupied();
         Slot newSlot = new Slot(remainder, md);
-        set.add(index, newSlot);
-
-        /*
-        int currentIndex=index;
-        boolean hasMore = false;
-
-        do {
-            // While there is a value in the index, if the next index is occupied,
-            // save the next index and put the value there.  If not occupied then move the current index there
-            // and done.
-            currentIndex++;
-            if (currentIndex > this.qfSize)
-                currentIndex = 1;
-            if (currentIndex == index)
-                throw new IOException("Ran out of open index locations");
-        }while(hasMore);
-        */
+        
+        runStart = findRunStart(index);
+        Slot currentSlot = set.get(runStart);
+        while (remainder > currentSlot.getRemainder()) {
+        	atStart = false;
+        	position++;
+        	currentSlot = set.get(position);
+        }
+        Slot prevSlot = set.get(position);
+        if(prevSlot.getMetadata().getShifted())
+        	newSlot.getMetadata().setShifted();
+        
+        shiftRight(position);
+        
+        if(!atStart) {
+        	newSlot.getMetadata().setContinuation();
+        }
+        set.set(position, newSlot);
+    }
+    
+    public void shiftRight(int index) {
+    	Slot currentSlot;
+    	Slot nextSlot;
+    	Slot temp = null;
+    	
+    	do { 
+    		currentSlot = set.get(index % getCapacity());
+    		nextSlot = set.get((index+1) % getCapacity());
+    		temp = nextSlot;
+    		nextSlot = currentSlot;
+    		nextSlot.getMetadata().setShifted();
+    		
+    		index++;
+    	} while (set.get(index % getCapacity()).getMetadata().getOccupied());
+    	
+    	if(temp != null) {
+    		set.set(index % getCapacity(), temp);
+    	}
     }
 
-    public void deleteAndShift(int index) throws IOException {
+    public void deleteShift(int index) throws IOException {
         set.remove(index);
 
         /*
@@ -132,7 +170,7 @@ public class QuotientFilter {
     }
 	
 	public void delete(Object obj) throws Exception {
-		int index = Utils.getIndex(obj, getSize());
+		int index = Utils.getIndex(obj, getCapacity());
 		int foundIndex;
 		foundIndex = lookup(index, Utils.getRemainder(obj));
 		if(foundIndex != -1) {
@@ -143,10 +181,13 @@ public class QuotientFilter {
 			Slot newSlot = new Slot();
 			set.set(foundIndex, newSlot);
 		}
+		else {
+			LOG.debug("Unable to delete, no object: " + obj.toString());
+		}
 	}
 
 	public int lookup(Object obj) {
-		return lookup(Utils.getIndex(obj, getSize()), Utils.getRemainder(obj));
+		return lookup(Utils.getIndex(obj, getCapacity()), Utils.getRemainder(obj));
 	}
 	
 	public int lookup(int index, short remainder) {	
@@ -164,7 +205,6 @@ public class QuotientFilter {
 	}
 	
 	private int checkQuotient(int runStart, short remainder) {
-		int foundIndex = -1;
 		int currentIndex = runStart;
 		Slot slot = set.get(runStart);
 		
@@ -176,8 +216,10 @@ public class QuotientFilter {
 				return -1;
 			}
 			currentIndex++;
+			if(currentIndex >= getCapacity()) 
+				currentIndex = 0;
 			slot = set.get(currentIndex);
-		} while(slot.getMetadata().getContinuation() && currentIndex < getSize());
+		} while(slot.getMetadata().getContinuation());
 		
 		// Did not find the remainder in the run, false
 		return -1;
@@ -196,7 +238,7 @@ public class QuotientFilter {
 				break;
 			currentIndex--;
 			if(currentIndex < 0) 
-				currentIndex = getSize() - 1;
+				currentIndex = getCapacity() - 1;
 		}
 		
 		// currentIndex is now the start of the CLUSTER
@@ -208,7 +250,7 @@ public class QuotientFilter {
 				return currentIndex;
 			}
 			currentIndex++;
-			if(currentIndex > (getSize() - 1))
+			if(currentIndex > (getCapacity() - 1))
 				currentIndex = 0;
 		}
 	}
