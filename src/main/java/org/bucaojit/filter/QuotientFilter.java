@@ -82,24 +82,24 @@ public class QuotientFilter {
 		}
 		int index = Utils.getIndex(obj, getCapacity());
 		Slot currentSlot = set.get(index);
-        short remainder = Utils.getRemainder(obj);
+	        short remainder = Utils.getRemainder(obj);
         
 		if(!currentSlot.getMetadata().getOccupied()) {		
 			currentSlot.setRemainder(Utils.getRemainder(obj));		 
 
-            Metadata md = new MetadataBitSet();
-            md.setOccupied();
+			Metadata md = new MetadataBitSet();
+			md.setOccupied();
 			currentSlot.setMetadata(md);
 			currentSlot.setRemainder(remainder);
 		}
 		else { 
 			int foundIndex;
-            foundIndex = lookup(index, remainder);
+			foundIndex = lookup(index, remainder);
 			if(foundIndex != -1) { 
 				throw new IOException("Object already exists");
 			}
 			else {
-                insertShift(remainder, foundIndex);
+				insertShift(remainder, foundIndex);
 			}
 		}
 	}
