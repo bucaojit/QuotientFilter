@@ -272,6 +272,10 @@ public class QuotientFilter {
 		return sb.toString();
 	}
 	
+	public void printQF() {
+		System.out.println(this.toString() + "\n");
+	}
+	
 	public static void main(String[] args) throws Exception{
 	    BasicConfigurator.configure();
 		QuotientFilter qf = new QuotientFilter(45);
