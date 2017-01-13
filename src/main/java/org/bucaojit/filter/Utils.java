@@ -14,7 +14,7 @@ public class Utils {
 	}
 	
 	public static int getIndex(Object obj, int size) {
-		return getQuotient(obj)/size;
+		return getQuotient(obj)%size;
 	}
 
 }

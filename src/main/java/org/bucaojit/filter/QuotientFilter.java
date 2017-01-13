@@ -82,7 +82,7 @@ public class QuotientFilter {
 		}
 		int index = Utils.getIndex(obj, getCapacity());
 		Slot currentSlot = set.get(index);
-	        short remainder = Utils.getRemainder(obj);
+	    short remainder = Utils.getRemainder(obj);
         
 		if(!currentSlot.getMetadata().getOccupied()) {		
 			currentSlot.setRemainder(Utils.getRemainder(obj));		 
@@ -99,7 +99,7 @@ public class QuotientFilter {
 				throw new IOException("Object already exists");
 			}
 			else {
-				insertShift(remainder, foundIndex);
+				insertShift(remainder, index);
 			}
 		}
 	}
@@ -114,7 +114,7 @@ public class QuotientFilter {
         
         runStart = findRunStart(index);
         Slot currentSlot = set.get(runStart);
-        while (remainder > currentSlot.getRemainder()) {
+        while ((remainder > currentSlot.getRemainder()) && currentSlot.getMetadata().getOccupied()) {
         	atStart = false;
         	position++;
         	currentSlot = set.get(position);
@@ -151,22 +151,13 @@ public class QuotientFilter {
     	}
     }
 
-    public void deleteShift(int index) throws IOException {
-        set.remove(index);
-
-        /*
-        int currentIndex=index;
-        boolean hasMore = false;
-        do {
-            // similar to insertAndShift, shift until there is an unoccupied slot
-            currentIndex++;
-            if (currentIndex > this.qfSize)
-                currentIndex = 1;
-            if (currentIndex == index)
-                throw new IOException("Ran out of open index locations");
-        }while(hasMore);
-        */
-
+    public void deleteShift(int index) throws IOException {       
+    	Slot slot, nextSlot; 
+    	do {
+    		slot = set.get(index);
+    		nextSlot = set.get((index++) % getCapacity());
+    		slot = nextSlot;
+    	}while(!slot.getMetadata().getOccupied());
     }
 	
 	public void delete(Object obj) throws Exception {
@@ -174,12 +165,12 @@ public class QuotientFilter {
 		int foundIndex;
 		foundIndex = lookup(index, Utils.getRemainder(obj));
 		if(foundIndex != -1) {
-			// Found the value
-			// shift left the moved slots if they exist, otherwise set index to null
-			
 			// No slots to move, inserting empty slot
-			Slot newSlot = new Slot();
-			set.set(foundIndex, newSlot);
+			if(!set.get((foundIndex+1) % getCapacity()).getMetadata().getOccupied()) {
+				Slot newSlot = new Slot();
+				set.set(foundIndex, newSlot);
+			}
+			deleteShift(foundIndex);
 		}
 		else {
 			LOG.debug("Unable to delete, no object: " + obj.toString());
@@ -255,15 +246,56 @@ public class QuotientFilter {
 		}
 	}
 	
-	public static void main(String[] args) {
+	public String toString() {
+		StringBuilder sb = new StringBuilder();
+		boolean first = true;
+		int count = 0;
+		for(Slot slot : set) {
+
+
+			if((!slot.getMetadata().getOccupied())) {
+				sb.append("<empty>");
+			}
+			else {
+				sb.append(slot.getMetadata().getOccupied() ? "1" : "0");
+				sb.append(slot.getMetadata().getContinuation() ? "1" : "0");
+				sb.append(slot.getMetadata().getShifted() ? "1" : "0");
+				sb.append(":");
+				sb.append(slot.getRemainder());
+				sb.append(" ");
+			}
+			count++;
+			if((count % 15) == 0){
+				sb.append("\n");
+			}
+		}
+		return sb.toString();
+	}
+	
+	public static void main(String[] args) throws Exception{
 	    BasicConfigurator.configure();
-		QuotientFilter qf = new QuotientFilter(10);
+		QuotientFilter qf = new QuotientFilter(45);
 		LOG.error("ERROR logging");
 		System.out.println(qf.hashCode());
 		
 		System.out.println(Integer.toBinaryString(qf.hashCode()));
 		System.out.println(Integer.toBinaryString(0xFFFF & Utils.getQuotient(qf)));
-		System.out.println(Integer.toBinaryString(0xFFFF & Utils.getRemainder(qf)));	
+		System.out.println(Integer.toBinaryString(0xFFFF & Utils.getRemainder(qf)));
+		
+		int value = 222;
+		String stringInput = "hello world";
+		long longval = 4444;
+		
+		qf.insert(value);
+		System.out.println(qf.toString());
+		System.out.println("");
+		qf.insert(stringInput);
+		System.out.println(qf.toString());
+		System.out.println("");
+		qf.insert(longval);
+		
+		
+		System.out.println(qf.toString());
 		
 	}	
 }

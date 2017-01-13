@@ -25,8 +25,8 @@ public class Slot {
 	private Metadata metadata;
 	
 	public Slot() {
-		this.remainder = null;
-		this.metadata = null;
+		this.remainder = -1;
+		this.metadata = new MetadataBitSet();
 	}
 	
 	public Slot(short remainder) {
