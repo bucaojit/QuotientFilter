@@ -146,7 +146,7 @@ public class QuotientFilter {
     		index++;
     	} while (set.get(index % getCapacity()).getMetadata().getOccupied());
     	
-    	if(temp != null) {
+    	if(temp.getMetadata().getOccupied()) {
     		set.set(index % getCapacity(), temp);
     	}
     }
