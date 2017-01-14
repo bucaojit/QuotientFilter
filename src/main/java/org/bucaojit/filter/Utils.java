@@ -5,6 +5,7 @@ public class Utils {
 	public static short getQuotient(Object obj) {
 		Integer hashcode = obj.hashCode();
 		hashcode = hashcode >> 16;
+		hashcode = Math.abs(hashcode);
 		return hashcode.shortValue();
 	}
 	

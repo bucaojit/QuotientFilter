@@ -108,6 +108,7 @@ public class QuotientFilter {
         Integer runStart = 0;
         Integer position = index;
         boolean atStart = true;
+        boolean subtract = false;
     	Metadata md = new MetadataBitSet();
         md.setOccupied();
         Slot newSlot = new Slot(remainder, md);
@@ -117,8 +118,12 @@ public class QuotientFilter {
         while ((remainder > currentSlot.getRemainder()) && currentSlot.getMetadata().getOccupied()) {
         	atStart = false;
         	position++;
+        	subtract = true;
         	currentSlot = set.get(position);
         }
+        
+        if(subtract)
+        	position--;
         Slot prevSlot = set.get(position);
         if(prevSlot.getMetadata().getShifted())
         	newSlot.getMetadata().setShifted();
@@ -135,16 +140,19 @@ public class QuotientFilter {
     	Slot currentSlot;
     	Slot nextSlot;
     	Slot temp = null;
+    	boolean setContinuation = true;
     	
     	do { 
     		currentSlot = set.get(index % getCapacity());
     		nextSlot = set.get((index+1) % getCapacity());
     		temp = nextSlot;
-    		nextSlot = currentSlot;
-    		nextSlot.getMetadata().setShifted();
+    		// nextSlot = currentSlot;
+    		currentSlot.getMetadata().setShifted();
+    		currentSlot.getMetadata().setContinuation();
+    		set.set(index+1 % getCapacity(), currentSlot);
     		
     		index++;
-    	} while (set.get(index % getCapacity()).getMetadata().getOccupied());
+    	} while (set.get(index+1 % getCapacity()).getMetadata().getOccupied());
     	
     	if(temp.getMetadata().getOccupied()) {
     		set.set(index % getCapacity(), temp);
@@ -184,7 +192,6 @@ public class QuotientFilter {
 	public int lookup(int index, short remainder) {	
 		int currentIndex = index;
 		Slot currentSlot = set.get(currentIndex);
-        int foundIndex = -1;
         int runStart = 0;
         
 		if(currentSlot.getMetadata().isClear())
